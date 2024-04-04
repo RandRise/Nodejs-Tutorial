@@ -103,6 +103,43 @@ ORDER BY
 }
 
 
+export async function add_student(
+    client,
+    student_firstName,
+    student_lastName,
+    date_of_birth,
+    city_of_birth_id,
+    img
+) {
+    try {
+        // Check if img is null or empty, and handle it accordingly
+        if (!img) {
+            img = null; // or handle default image logic if needed
+        }
+
+        const res = await client.query(`
+            INSERT INTO students (
+                first_name,
+                last_name,
+                date_of_birth,
+                city_of_birth_id,
+                img
+            ) VALUES ($1, $2, $3, $4, $5) RETURNING *
+        `, [
+            student_firstName,
+            student_lastName,
+            date_of_birth,
+            city_of_birth_id,
+            img
+        ]);
+
+        console.log("Completed. Added row:", res.rows);
+        return res.rows;
+    } catch (err) {
+        console.log("Error adding new student", err);
+        throw err;
+    }
+}
 // export async function add_student(
 //     client,
 //     student_firstName,
@@ -110,44 +147,7 @@ ORDER BY
 //     date_of_birth,
 //     city_of_birth_id,
 //     img
-// ) {
-//     try {
-//         // Check if img is null or empty, and handle it accordingly
-//         if (!img) {
-//             img = null; // or handle default image logic if needed
-//         }
-        
-//         const res = await client.query(`
-//             INSERT INTO students (
-//                 first_name,
-//                 last_name,
-//                 date_of_birth,
-//                 city_of_birth_id,
-//                 img
-//             ) VALUES ($1, $2, $3, $4, $5) RETURNING *
-//         `, [
-//             student_firstName,
-//             student_lastName,
-//             date_of_birth,
-//             city_of_birth_id,
-//             img
-//         ]);
-        
-//         console.log("Completed. Added row:", res.rows);
-//         return res.rows;
-//     } catch (err) {
-//         console.log("Error adding new student", err);
-//         throw err;
-//     }
-// }
-// export async function add_student(
-//     client,
-//     student_firstName,
-//     student_lastName,
-//     date_of_birth,
-//     city_of_birth_id,
-//     img
-    
+
 // ) {
 //     try {
 //         const res = await client.query(`insert into students(
@@ -171,30 +171,40 @@ ORDER BY
 //     }
 // }
 
-export async function add_student(
-    client,
-    first_name,
-    last_name,
-    date_of_birth,
-    city_of_birth_id,
-    img) {
-    try {
-        // Decode Base64 encoded image data if provided
-        const imageData = img ? Buffer.from(img, 'base64') : null;
-        const res = await client.query(`insert into students(first_name, last_name, date_of_birth, city_of_birth_id, img) values($1, $2, $3, $4, $5) returning *`, [first_name, last_name, date_of_birth, city_of_birth_id, imageData]);
+// export async function add_student(
+//     client,
+//     first_name,
+//     last_name,
+//     date_of_birth,
+//     city_of_birth_id,
+//     img) {
+//     try {
+//         // Decode Base64 encoded image data if provided
+//         const imageData = img ? Buffer.from(img, 'base64') : null;
+//         const res = await client.query(`insert into students(first_name,
+//             last_name,
+//             date_of_birth,
+//             ity_of_birth_id,
+//             img) values($1, $2, $3, $4, $5) returning *`,
+//             [
+//                 first_name,
+//                 last_name,
+//                 date_of_birth,
+//                 city_of_birth_id,
+//                 imageData]);
 
-        if (imageData) {
-            const filePath = path.join(__dirname, '..', 'uploads', 'images',`${res.rows[0].id.png}`);
-            fs.writeFileSync(filePath, imageData);
-            console.log(`Image saved to ${filePath}`);
-        }
-        console.log("Completed. Added row:", res.rows);
-        return res.rows;
-    } catch (err) {
-        console.log("Error adding new student", err);
-        throw err;
-    }
-}
+//         if (imageData) {
+//             const filePath = path.join(__dirname, '..', 'uploads', 'images', `${res.rows[0].id.png}`);
+//             fs.writeFileSync(filePath, imageData);
+//             console.log(`Image saved to ${filePath}`);
+//         }
+//         console.log("Completed. Added row:", res.rows);
+//         return res.rows;
+//     } catch (err) {
+//         console.log("Error adding new student", err);
+//         throw err;
+//     }
+// }
 
 export async function delete_student(client, id) {
     try {

@@ -8,7 +8,18 @@ import cors from 'cors';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
 import path from 'path';
-import { add_city, update_city, display_cities, display_city, delete_city, add_student, display_student, display_students, delete_student, update_student } from './db.mjs';
+import fs from 'fs'
+import {
+    add_city, update_city,
+    display_cities,
+    display_city,
+    delete_city,
+    add_student,
+    display_student,
+    display_students,
+    delete_student,
+    update_student
+} from './db.mjs';
 dotenv.config();
 
 const pool = new pg.Pool({
@@ -33,6 +44,7 @@ app.use('/uploads/images', express.static(path.join(__dirname, 'uploads', 'image
 const upload = multer({ dest: path.join(__dirname, '/uploads/images') });
 
 app.use(cors());
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -372,60 +384,71 @@ app.get("/api/student/:id?", async (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
- *           example: { first_name: "FirstName", last_name: "LastName", date_of_birth: "DateOfBirth", city_of_birth: "CityOfBirth",img: "Image Ref" }
- *            
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               first_name:
+ *                 type: string
+ *                 description: The first name of the student.
+ *               last_name:
+ *                 type: string
+ *                 description: The last name of the student.
+ *               date_of_birth:
+ *                 type: string
+ *                 format: date
+ *                 description: The date of birth of the student (YYYY-MM-DD).
+ *               city_of_birth_id:
+ *                 type: string
+ *                 description: The city of birth of the student.
+ *               img:
+ *                 type: string
+ *                 format: binary
+ *                 description: The image file of the student.
  *     responses:
- *       200:
+ *       '200':
  *         description: Student added successfully
  *         content:
  *           application/json:
- *             example: { id: "...", first_name: "...", last_name: "...", date_of_birth: "...", city_of_birth: "..." }
- *       500:
+ *             example: 
+ *               id: "..."
+ *               first_name: "..."
+ *               last_name: "..."
+ *               date_of_birth: "..."
+ *               city_of_birth: "..."
+ *       '500':
  *         description: Error adding student
  *         content:
  *           application/json:
- *             example: { statusCode: 500, message: "Failed to add student", exception: "...", result: [] }
+ *             example: 
+ *               statusCode: 500
+ *               message: "Failed to add student"
+ *               exception: "..."
+ *               result: []
  */
 
-// app.post("/api/student", async (req, res) => {
+
+
+// app.post("/api/student", upload.single('img'), async (req, res) => {
 //     console.log(req.body);
+//     console.log("Request File", req.file);
+//     // Read binary data of the file
+//     const binaryData = fs.readFileSync(req.file.path);
+
+//     // Convert binary data to base64 string
+//     const base64String = Buffer.from(binaryData).toString('base64');
+
 //     const first_name = req.body.first_name;
 //     const last_name = req.body.last_name;
 //     const date_of_birth = req.body.date_of_birth;
 //     const city_of_birth_id = req.body.city_of_birth_id;
-//     let img = req.body.img; // Assuming img is the Base64 string
-
-//     // Convert image data to Base64 if available
-//     if (img && typeof img === 'string') {
-//         // Check if img contains data:image/ prefix
-//         if (img.startsWith('data:image/')) {
-//             // Image data is already in Base64 format, no need for conversion
-//             console.log('Image data is already in Base64 format');
-//         } else {
-//             // Assuming img is the file path or binary data of the image
-//             const fs = require('fs');
-//             const path = require('path');
-
-//             // Read the image file as binary data
-//             const imageData = fs.readFileSync(path.resolve(img));
-
-//             // Convert binary data to Base64
-//             const base64Data = Buffer.from(imageData).toString('base64');
-
-//             // Construct the Base64 data URI
-//             img = `data:image/png;base64,${base64Data}`;
-//         }
-//     } else {
-//         console.log('Invalid image data or format');
-//     }
+//     const img = base64String;
 //     var response = {
 //         statusCode: 200,
 //         message: 'Student added successfully',
 //         exception: null,
 //         result: []
 //     }
-
 //     let c;
 //     try {
 //         c = await pool.connect();
@@ -437,7 +460,8 @@ app.get("/api/student/:id?", async (req, res) => {
 //             img
 //         );
 //         return res.json(response);
-//     } catch (err) {
+//     }
+//     catch (err) {
 //         console.log('Error in api/student (POST)', err);
 //         response = {
 //             statusCode: 500,
@@ -446,50 +470,52 @@ app.get("/api/student/:id?", async (req, res) => {
 //             result: null
 //         }
 //         return res.json(response);
-//     } finally {
+//     }
+//     finally {
 //         if (c) c.release();
 //     }
+
 // })
 app.post("/api/student", upload.single('img'), async (req, res) => {
-    console.log(req.body);
-    const first_name = req.body.first_name;
-    const last_name = req.body.last_name;
-    const date_of_birth = req.body.date_of_birth;
-    const city_of_birth_id = req.body.city_of_birth_id;
-    const img = req.file;
-    var response = {
-        statusCode: 200,
-        message: 'Student added successfully',
-        exception: null,
-        result: []
-    }
-    let c;
     try {
-        c = await pool.connect();
-        response.result = await add_student(c,
-            first_name,
-            last_name,
-            date_of_birth,
-            city_of_birth_id,
-            img
-        );
-        return res.json(response);
-    }
-    catch (err) {
+        let img = null;
+
+
+        if (req.file) {
+
+            const binaryData = fs.readFileSync(req.file.path);
+
+            const base64String = Buffer.from(binaryData).toString('base64');
+
+            img = base64String;
+
+        } else {
+            
+            console.log("No Image Uploaded");
+        }
+
+        const { first_name, last_name, date_of_birth, city_of_birth_id } = req.body;
+
+        let c = await pool.connect();
+        let result = await add_student(c, first_name, last_name, date_of_birth, city_of_birth_id, img);
+        c.release();
+
+
+        return res.json({
+            statusCode: 200,
+            message: 'Student added successfully',
+            result
+        });
+    } catch (err) {
         console.log('Error in api/student (POST)', err);
-        response = {
+        return res.status(500).json({
             statusCode: 500,
             message: err.message,
             exception: err.detail,
             result: null
-        }
-        return res.json(response);
+        });
     }
-    finally {
-        if (c) c.release();
-    }
-
-})
+});
 
 /**
  * @swagger
