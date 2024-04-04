@@ -221,21 +221,24 @@ export async function update_student(client,
     first_name,
     last_name,
     date_of_birth,
-    city_of_birth_id) {
+    city_of_birth_id,
+    img) {
 
     try {
         const res = await client.query(`update students set 
         first_name = $2 ,
         last_name = $3 ,
         date_of_birth = $4 ,
-        city_of_birth_id = $5 
+        city_of_birth_id = $5,
+        img = $6 
         where 
         student_id = $1 returning *`,
             [student_id,
                 first_name,
                 last_name,
                 date_of_birth,
-                city_of_birth_id]);
+                city_of_birth_id,
+                img]);
         console.log("Completed. Updated row", res.rows);
         return res.rows;
 

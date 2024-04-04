@@ -490,7 +490,7 @@ app.post("/api/student", upload.single('img'), async (req, res) => {
             img = base64String;
 
         } else {
-            
+
             console.log("No Image Uploaded");
         }
 
@@ -587,14 +587,33 @@ app.delete("/api/student/:id", async (req, res) => {
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
- *           example: { first_name: "NewFirstName", last_name: "NewLastName", date_of_birth: "NewDateOfBirth", city_of_birth_id: "NewCityOfBirth" }
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               first_name:
+ *                 type: string
+ *                 description: The updated first name of the student.
+ *               last_name:
+ *                 type: string
+ *                 description: The updated last name of the student.
+ *               date_of_birth:
+ *                 type: string
+ *                 format: date
+ *                 description: The updated date of birth of the student (YYYY-MM-DD).
+ *               city_of_birth_id:
+ *                 type: integer
+ *                 description: The updated city of birth ID of the student.
+ *               img:
+ *                 type: string
+ *                 format: binary
+ *                 description: The updated image file of the student.
  *     responses:
  *       200:
  *         description: Student details updated successfully
  *         content:
  *           application/json:
- *             example: { id: "...", first_name: "...", last_name: "...", date_of_birth: "...", city_of_birth_id: "..." }
+ *             example: { id: "...", first_name: "...", last_name: "...", date_of_birth: "...", city_of_birth_id: "...", img: "..." }
  *       500:
  *         description: Error updating student details
  *         content:
@@ -602,33 +621,52 @@ app.delete("/api/student/:id", async (req, res) => {
  *             example: { statusCode: 500, message: "Failed to update student details", exception: "...", result: [] }
  */
 
-app.put("/api/student/:id", async (req, res) => {
+app.put("/api/student/:id", upload.single('img'), async (req, res) => {
     const id = req.params.id;
-    const first_name = req.body.first_name;
-    const last_name = req.body.last_name;
-    const date_of_birth = req.body.date_of_birth;
-    const city_of_birth_id = req.body.city_of_birth_id;
-    console.log("Request Body", req.body);
-    console.log("city_of_birth_id:", city_of_birth_id);
+    let img = null;
+
+    if (req.file) {
+        const binaryData = fs.readFileSync(req.file.path);
+        const base64String = Buffer.from(binaryData).toString('base64');
+        img = base64String;
+    } else {
+        console.log("No Image Uploaded");
+    }
+
+    const {
+        first_name,
+        last_name,
+        date_of_birth,
+        city_of_birth_id
+    } = req.body;
+
     var response = {
         statusCode: 200,
         message: "Update Success!",
         exception: null,
         result: []
-    }
+    };
+
     let c;
     try {
         c = await pool.connect();
-        response.result = await update_student(c, id, first_name, last_name, date_of_birth, city_of_birth_id);
+        response.result = await update_student(
+            c,
+            id,
+            first_name,
+            last_name,
+            date_of_birth,
+            city_of_birth_id,
+            img
+        );
     } catch (err) {
         response = {
             statusCode: 500,
             message: 'Error Updating Student Record',
             exception: err.detail,
             result: []
-        }
-    }
-    finally {
+        };
+    } finally {
         if (c) c.release();
     }
     res.json(response);
